@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-agent
+  labels:
+    app: voice-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voice-agent
+  template:
+    metadata:
+      labels:
+        app: voice-agent
+    spec:
+      containers:
+        - name: voice-agent
+          image: ghcr.io/livekit/voice-agent:latest
+          imagePullPolicy: Always
+          env:
+            - name: LIVEKIT_URL
+              value: "wss://livekit.azure.stunner.cc.doctorlittle.org"
+            - name: LIVEKIT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: livekit-agents-secrets
+                  key: LIVEKIT_API_KEY
+            - name: LIVEKIT_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: livekit-agents-secrets
+                  key: LIVEKIT_API_SECRET
+            - name: DEEPGRAM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agents-env
+                  key: DEEPGRAM_API_KEY
+          ports:
+            - containerPort: 5000
