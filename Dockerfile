@@ -1,35 +1,38 @@
 # syntax=docker/dockerfile:1
 FROM python:3.13.1-slim
 
-# don’t write .pyc files, flush logs immediately
+#–– Environment: no .pyc files, unbuffered logs ––
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PATH=/home/assistant/.local/bin:$PATH
 
-# Create a non‑root user
+#–– Create a non‑root user “assistant” with home at /app ––
 ARG UID=10001
 RUN adduser --disabled-password --gecos "" \
-      --home "/home/appuser" \
+      --home "/app" \
       --shell "/sbin/nologin" \
-      --uid "${UID}" appuser
+      --uid "${UID}" assistant
 
-# Install any C‑build dependencies
+#–– Install C build‑deps (for any native pip packages) ––
+USER root
 RUN apt-get update && \
     apt-get install -y gcc g++ python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
-USER appuser
-WORKDIR /home/appuser
+#–– Switch to non‑root ––
+USER assistant
+WORKDIR /app
 
-# Install your Python dependencies
+#–– Install Python deps into ~/.local ––
 COPY requirements.txt .
 RUN python -m pip install --user --no-cache-dir -r requirements.txt
 
-# Copy in your agent code
-COPY . .
+#–– Copy your agent code ––
+COPY --chown=assistant:assistant . .
 
-# (Optional) Download models at build time
-RUN python minimal_assistant.py download-files
+#–– NO build‑time download of models ––
+#    We’ll pull at startup instead.
 
-# Set the default entrypoint and command
+#–– Entrypoint & default command ––
 ENTRYPOINT ["python", "minimal_assistant.py"]
 CMD ["dev"]
