@@ -5,12 +5,9 @@ FROM python:3.13.1-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-#–– Create a non‑root user “assistant” with home at /app ––
+#–– Create a non‑root user “appuser” with home at /home/appuser ––
 ARG UID=10001
-RUN adduser --disabled-password --gecos "" \
-      --home "/app" \
-      --shell "/sbin/nologin" \
-      --uid "${UID}" assistant
+RUN adduser --disabled-password --gecos "" --home "/home/appuser" --shell "/sbin/nologin" --uid "${UID}" appuser
 
 #–– Install C build‑deps (for any native pip packages) as root ––
 USER root
@@ -18,16 +15,19 @@ RUN apt-get update && \
     apt-get install -y gcc g++ python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+#–– Switch to non‑root user and set working directory ––
+USER appuser
+WORKDIR /home/appuser
 
-#–– Install Python dependencies globally (without --user) ––
+#–– Install Python dependencies globally (do not use --user) ––
 COPY requirements.txt .
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
-#–– Copy your agent code and set proper ownership ––
-COPY --chown=assistant:assistant . .
+#–– Copy your agent code (with proper ownership) ––
+COPY --chown=appuser:appuser . .
 
-#–– We’ll pull models at runtime, not build time ––
+#–– Download assets at build time (optional – if needed, otherwise run at startup) ––
+RUN python minimal_assistant.py download-files
 
 #–– Set the default entrypoint & command ––
 ENTRYPOINT ["python", "minimal_assistant.py"]
