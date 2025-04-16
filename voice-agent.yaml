@@ -16,25 +16,11 @@ spec:
     spec:
       containers:
         - name: voice-agent
-          image: ghcr.io/livekit/voice-agent:latest
+          # Use your custom image built via GitHub Actions.
+          image: ghcr.io/augius1/assistant-little:latest
           imagePullPolicy: Always
-          env:
-            - name: LIVEKIT_URL
-              value: "wss://livekit.azure.stunner.cc.doctorlittle.org"
-            - name: LIVEKIT_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: livekit-agents-secrets
-                  key: LIVEKIT_API_KEY
-            - name: LIVEKIT_API_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: livekit-agents-secrets
-                  key: LIVEKIT_API_SECRET
-            - name: DEEPGRAM_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: agents-env
-                  key: DEEPGRAM_API_KEY
+          envFrom:
+            - secretRef:
+                name: agents-env
           ports:
             - containerPort: 5000
