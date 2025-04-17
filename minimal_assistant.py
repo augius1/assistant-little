@@ -45,11 +45,10 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
 if __name__ == "__main__":
-    # Bake LiveKit credentials into WorkerOptions
-    opts = agents.WorkerOptions(
-        entrypoint_fnc=entrypoint,
-        ws_url=os.getenv("LIVEKIT_URL"),
-        api_key=os.getenv("LIVEKIT_API_KEY"),
-        api_secret=os.getenv("LIVEKIT_API_SECRET"),
-    )
+    # Create WorkerOptions and then set credentials from environment
+    opts = agents.WorkerOptions(entrypoint_fnc=entrypoint)
+    opts.ws_url = os.getenv("LIVEKIT_URL")
+    opts.api_key = os.getenv("LIVEKIT_API_KEY")
+    opts.api_secret = os.getenv("LIVEKIT_API_SECRET")
+
     agents.cli.run_app(opts)
