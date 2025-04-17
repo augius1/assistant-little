@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import asyncio
-import argparse
 from dotenv import load_dotenv
 
 # Core Agents SDK
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     # Bake LiveKit credentials into WorkerOptions
     opts = agents.WorkerOptions(
         entrypoint_fnc=entrypoint,
-        url=os.getenv("LIVEKIT_URL"),
+        ws_url=os.getenv("LIVEKIT_URL"),
         api_key=os.getenv("LIVEKIT_API_KEY"),
         api_secret=os.getenv("LIVEKIT_API_SECRET"),
     )
