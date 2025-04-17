@@ -11,7 +11,8 @@ from livekit.agents import AgentSession, Agent, RoomInputOptions
 # Plugins for each pipeline component
 from livekit.plugins import deepgram, openai, silero, azure
 
-load_dotenv()  # Load .env or environment variables
+# Load environment variables from .env or Kubernetes Secrets
+load_dotenv()
 
 class Assistant(Agent):
     def __init__(self):
@@ -23,14 +24,16 @@ class Assistant(Agent):
         )
 
 async def entrypoint(ctx: agents.JobContext):
-    # Connect and configure the session
+    # Connect to LiveKit
     await ctx.connect()
+
+    # Configure the session with provider plugins
     session = AgentSession(
         stt=deepgram.STT(api_key=os.getenv("DEEPGRAM_API_KEY")),
         llm=openai.LLM(api_key=os.getenv("OPENAI_API_KEY")),
         tts=openai.TTS(api_key=os.getenv("OPENAI_API_KEY")),
         vad=silero.VAD.load(),
-        # Optionally add Azure or other plugins as needed:
+        # Optionally add Azure Speech:
         # stt=azure.STT(speech_key=os.getenv("AZURE_SPEECH_KEY"),
         #               speech_region=os.getenv("AZURE_SPEECH_REGION"))
     )
@@ -43,6 +46,11 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
 if __name__ == "__main__":
-    # Set up WorkerOptions and launch CLI
-    opts = agents.WorkerOptions(entrypoint_fnc=entrypoint)
+    # Bake LiveKit credentials into WorkerOptions
+    opts = agents.WorkerOptions(
+        entrypoint_fnc=entrypoint,
+        url=os.getenv("LIVEKIT_URL"),
+        api_key=os.getenv("LIVEKIT_API_KEY"),
+        api_secret=os.getenv("LIVEKIT_API_SECRET"),
+    )
     agents.cli.run_app(opts)
