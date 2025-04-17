@@ -25,4 +25,6 @@ USER assistant
 COPY --chown=assistant:assistant . .
 RUN python minimal_assistant.py download-files
 
+# Entrypoint + default command:
 ENTRYPOINT ["python", "minimal_assistant.py"]
+CMD ["start"]
