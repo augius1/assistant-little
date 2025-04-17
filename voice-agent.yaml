@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: voice-agent
-  labels:
-    app: voice-agent
 spec:
   replicas: 1
   selector:
@@ -16,9 +14,13 @@ spec:
     spec:
       containers:
         - name: voice-agent
-          # Use your custom image built via GitHub Actions.
           image: ghcr.io/augius1/assistant-little:latest
           imagePullPolicy: Always
+          # ← add these args to extend the drain so the worker doesn't exit
+          args:
+            - start
+            - --drain-timeout
+            - "86400"      # wait up to 24 hours before shutting down
           envFrom:
             - secretRef:
                 name: agents-env
