@@ -1,38 +1,46 @@
-# syntax=docker/dockerfile:1
-FROM python:3.13.1-slim
+# Use an official Python image
+FROM python:3.10-slim
 
-# Avoid .pyc, unbuffered logs
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# System-level dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libsndfile1 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install C build deps as root
-RUN apt-get update && \
-    apt-get install -y gcc g++ python3-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Set working dir and copy requirements early
-WORKDIR /app
-COPY requirements.txt .
-
-# Install dependencies as root (so they're visible system-wide)
-RUN python -m pip install --no-cache-dir -r requirements.txt
-
-# Create non-root user after pip install
-ARG UID=10001
+# ---------------------------
+# Add the assistant user first
+# ---------------------------
 RUN adduser --disabled-password \
     --gecos "" \
     --home "/home/appuser" \
     --shell "/sbin/nologin" \
-    --uid "${UID}" \
-    assistant  \
- && mkdir -p /home/appuser && chown -R assistant:assistant /home/appuser
+    --uid "10001" assistant && \
+    mkdir -p /home/appuser && \
+    chown -R assistant:assistant /home/appuser
 
-# Copy in your code after switching user
+# Switch to assistant user
 USER assistant
+WORKDIR /home/appuser
+
+# ---------------------------
+# Set environment variables
+# ---------------------------
+ENV PATH="/home/appuser/.local/bin:$PATH"
+ENV PYTHONPATH="/home/appuser/.local/lib/python3.10/site-packages:$PYTHONPATH"
+
+# ---------------------------
+# Copy and install dependencies
+# ---------------------------
+COPY --chown=assistant:assistant requirements.txt requirements.txt
+RUN pip install --user -r requirements.txt
+
+# Copy the rest of your app
 COPY --chown=assistant:assistant . .
 
-# Run script (still as assistant, but deps are installed globally)
+# ---------------------------
+# Run your startup command
+# ---------------------------
 RUN python minimal_assistant.py download-files
 
 ENTRYPOINT ["python", "minimal_assistant.py"]
-CMD ["dev"]
